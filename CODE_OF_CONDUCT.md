@@ -34,24 +34,26 @@ someone represents the project in public.
 
 ## Reporting a problem
 
-If you experience or witness unacceptable behaviour:
+If you experience or witness unacceptable behaviour, report it to GitHub:
 
-- Contact the maintainer, Nizar Chtioui
-  ([@nizarchtioui](https://github.com/nizarchtioui)), privately, using the
-  contact details on their GitHub profile.
-- If the problem involves the maintainer, or you would rather not contact
-  them, use GitHub's **Report content** option on the comment, issue or
-  account, or contact GitHub Support.
+- **A comment, issue, pull request or discussion:** open the options menu
+  (**⋯**) in its top-right corner, choose **Report content**, and fill in the
+  form.
+- **An account:** open the person's GitHub profile, choose
+  **Block or Report**, then **Report abuse**.
 
-Include links and a short description of what happened. Reports are handled
-confidentially.
+These reports go privately to GitHub Support, which reviews them under
+[GitHub's Community Guidelines](https://docs.github.com/en/site-policy/github-terms/github-community-guidelines).
+This also works when the problem involves the maintainer. Include links and a
+short description of what happened. GitHub explains each step in
+[Reporting abuse or spam](https://docs.github.com/en/communities/maintaining-your-safety-on-github/reporting-abuse-or-spam).
 
 ## Enforcement
 
-The maintainer reviews every report. They may take any action they judge
-appropriate, for example:
+The maintainer moderates this repository and enforces this code wherever they
+see it broken. They may take any action they judge appropriate, for example:
 
-1. a private warning with an explanation
+1. a warning with an explanation
 2. removing comments, commits or other contributions that break this code
 3. a temporary ban from project spaces
 4. a permanent ban

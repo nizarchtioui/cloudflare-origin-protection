@@ -9,6 +9,9 @@
   backends, including the planted-rule test.
 - **Updated link.** Cloudflare renamed Aegis to Dedicated CDN Egress IPs, so
   `docs/why-now.md` now links to the new page.
+- **Conduct reports go through GitHub.** The Code of Conduct now asks people
+  to use GitHub's **Report content** and **Report abuse** options, which reach
+  GitHub Support privately.
 
 ## 2.0.1 (2026-10-27)
 
