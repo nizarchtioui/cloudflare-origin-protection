@@ -2,6 +2,17 @@
 
 Thanks for helping make origin servers harder to reach around Cloudflare.
 
+By taking part you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+- **Bugs and feature ideas:** open an issue using one of the forms.
+- **Vulnerabilities:** report them privately, as described in
+  [SECURITY.md](SECURITY.md), never in an issue.
+- **Changes:** open a pull request; its template lists the checks.
+
+Never post real origin IP addresses, hostnames, certificates or secrets
+anywhere in this repository. Use placeholders such as `203.0.113.10` and
+`example.com`.
+
 ## Ground rules
 
 - **Defensive scope only.** No features for finding or confirming origin servers

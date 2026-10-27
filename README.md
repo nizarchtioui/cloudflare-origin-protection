@@ -296,8 +296,15 @@ These are design choices, not an outside audit. See
 
 ## Contributing and security
 
-Contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md). Please
-report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+Contributions are welcome:
+
+- **How to contribute:** see [CONTRIBUTING.md](CONTRIBUTING.md). Everyone who
+  takes part follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+- **Bugs and ideas:** open an issue with one of the forms, and never include
+  real origin IPs or hostnames.
+- **Vulnerabilities:** report them privately, as described in
+  [SECURITY.md](SECURITY.md).
+- **Accessibility:** see [ACCESSIBILITY.md](ACCESSIBILITY.md).
 
 ## License
 

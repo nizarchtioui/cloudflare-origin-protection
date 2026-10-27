@@ -27,6 +27,47 @@ jobs:
       - name: Unit and integration tests (TLS tests use openssl)
         run: python -m unittest discover -s tests -v
 
+  issue-forms:
+    name: Issue forms are valid
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install PyYAML
+        run: python -m pip install --quiet pyyaml
+      - name: Parse and check the issue forms
+        run: |
+          python - <<'EOF'
+          import glob, sys, yaml
+          errors = []
+          paths = sorted(glob.glob(".github/ISSUE_TEMPLATE/*.yml"))
+          for path in paths:
+              with open(path, encoding="utf-8") as fh:
+                  doc = yaml.safe_load(fh)
+              if path.endswith("config.yml"):
+                  if not isinstance(doc.get("blank_issues_enabled"), bool):
+                      errors.append(path + ": blank_issues_enabled must be true or false")
+                  for link in doc.get("contact_links", []):
+                      errors += ["%s: contact link missing %s" % (path, k) for k in ("name", "url", "about") if not link.get(k)]
+                  continue
+              errors += ["%s: missing %s" % (path, k) for k in ("name", "description", "body") if not doc.get(k)]
+              ids = []
+              for item in doc.get("body", []):
+                  kind = item.get("type")
+                  if kind not in ("markdown", "input", "textarea", "dropdown", "checkboxes"):
+                      errors.append("%s: unknown field type %r" % (path, kind))
+                  elif kind != "markdown":
+                      if not item.get("attributes", {}).get("label"):
+                          errors.append("%s: a %s field has no label" % (path, kind))
+                      ids.append(item.get("id"))
+              if len(ids) != len(set(ids)):
+                  errors.append(path + ": duplicate field ids")
+          print("\n".join(errors) if errors else "%d issue form files OK" % len(paths))
+          sys.exit(1 if errors else 0)
+          EOF
+
   firewall:
     name: Load the generated rules on Linux
     runs-on: ubuntu-latest

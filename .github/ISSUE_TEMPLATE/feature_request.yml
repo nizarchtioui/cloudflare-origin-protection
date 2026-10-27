@@ -1,0 +1,41 @@
+name: "Feature request"
+description: "Suggest an improvement to the skill, the scripts or the docs."
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This project is **defensive only**: it helps people protect origin servers they operate. Requests for features that find, probe or confirm other people's origins will be closed.
+
+        Keep real origin IP addresses, hostnames and secrets out of this public issue.
+  - type: textarea
+    id: problem
+    attributes:
+      label: "What problem would this solve?"
+      description: "Describe the situation, for example the platform, firewall or Cloudflare setup you are protecting."
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: "What would you like to happen?"
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives you considered"
+  - type: textarea
+    id: sources
+    attributes:
+      label: "Sources"
+      description: "Links to vendor documentation that support the change, for example from Cloudflare, your web server or your cloud provider."
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: "Scope"
+      options:
+        - label: "This request is about protecting infrastructure I operate, and contains no real origin IPs, hostnames or secrets."
+          required: true

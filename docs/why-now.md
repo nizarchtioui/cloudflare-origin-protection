@@ -9,6 +9,8 @@ that address simply goes around the edge, and none of those protections apply.
 
 ```mermaid
 flowchart LR
+    accTitle: How attackers go around Cloudflare
+    accDescr: Visitors reach the origin through the Cloudflare edge, which applies WAF rules, rate limits, bot checks and DDoS protection. An attacker who knows the origin IP connects to the origin directly and skips every one of those controls.
     V[Visitors] -->|DNS points to Cloudflare| CF["Cloudflare edge<br/>WAF · rate limits · bots · DDoS"]
     CF -->|proxied requests| O[(Your origin)]
     A[Attacker who knows<br/>the origin IP] -. "direct connection<br/>skips every edge control" .-> O
@@ -93,6 +95,8 @@ An origin is protected when it passes all three of these tests:
 
 ```mermaid
 flowchart LR
+    accTitle: A protected origin
+    accDescr: Your Cloudflare zone reaches the origin from an allowed IP range and presents your client certificate, so it is accepted. Other Cloudflare zones also come from allowed IP ranges but lack your certificate, so they are rejected. A direct attacker is dropped at the firewall.
     V[Visitors] --> CF[Your Cloudflare zone]
     CF -->|"allowed IP range + your client certificate"| O[(Origin)]
     X[Other Cloudflare zones] -. "allowed IP, wrong certificate: REJECTED" .-> O
