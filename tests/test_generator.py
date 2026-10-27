@@ -105,6 +105,9 @@ class GeneratorTest(unittest.TestCase):
         self.assertIn("IPv6 web ports are NOT filtered", out)
         self.assertIn("-I PREROUTING 1 -i eth0 -m addrtype --dst-type LOCAL -p tcp -m multiport --dports 443 "
                       "-m comment --comment $TAG -j $NEW", out)
+        # Old rules are deleted as plain words, never through eval, and odd ones are skipped.
+        self.assertNotIn("eval", out)
+        self.assertIn("LC_ALL=C tr -d 'A-Za-z0-9_.,:/@! -'", out)
         sh = shutil.which("sh")
         if sh and os.name != "nt":
             script = self.write("cf.sh", out)
@@ -173,12 +176,22 @@ class GeneratorTest(unittest.TestCase):
         self.assertNotRegex(out, r"(?m)^rm -rf")
         self.assertNotIn("etag abc", out)
 
-    def test_falls_back_to_snapshot_unless_live_is_required(self):
+    def test_failed_fetch_fails_closed_unless_snapshot_is_allowed(self):
+        # A tiny timeout makes every live source fail.
         code, out, err = self.gen("--format", "cidr", "--timeout", "0.0001", ranges=False)
+        self.assertEqual(code, 1, err)
+        self.assertEqual(out, "")
+        self.assertIn("no rules were written", err)
+        self.assertIn("--allow-snapshot", err)
+        code, out, err = self.gen("--format", "cidr", "--timeout", "0.0001", "--allow-snapshot", ranges=False)
         self.assertEqual(code, 0, err)
         self.assertIn("bundled snapshot", err)
+        self.assertEqual(len(out.split()), 22)
+        # The old opt-in flag still works, and contradicting flags are refused.
         code, _, _ = self.gen("--format", "cidr", "--timeout", "0.0001", "--require-live", ranges=False)
         self.assertEqual(code, 1)
+        code, _, _ = self.gen("--format", "cidr", "--require-live", "--allow-snapshot", ranges=False)
+        self.assertEqual(code, 2)
 
 
 if __name__ == "__main__":

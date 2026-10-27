@@ -62,6 +62,11 @@ validates every entry before printing ready-to-apply rules. It refuses:
   of the known ranges gone, or more than double the address space. Override
   with `--accept-changes` after review.
 
+When the live list can't be fetched or is refused, the script **fails
+closed**: it prints an error, writes no rules and exits with status 1. A
+scheduled refresh therefore keeps your last good rules. `--allow-snapshot`
+opts into the bundled, dated list instead.
+
 This means a captive portal, a truncated response or a poisoned list is
 rejected rather than applied. Banner text such as the etag and source is
 sanitised, so a ranges file cannot inject commands into the generated
@@ -91,7 +96,7 @@ python3 -I generate_cf_firewall_rules.py --format nftables --ranges-file cf-rang
 | `--also-allow CIDR` | Extra trusted source: load balancer, health checker, VPC range, or a temporary test IP. Repeatable. |
 | `--no-udp-drop` | Keep UDP on the web ports open, for a VPN on UDP 443. Disable HTTP/3 on the web server then. |
 | `--no-v6` | Do not admit Cloudflare over IPv6; IPv6 web traffic is then dropped. |
-| `--require-live` | Exit 1 instead of using the bundled snapshot. Use it in timers so a fetch failure keeps the last good rules. |
+| `--allow-snapshot` | If the live list can't be fetched or looks wrong, use the bundled, dated list instead of failing. Off by default. (The old `--require-live` is still accepted; failing is now the default.) |
 | `--accept-changes` | Accept a range list that moved far from the snapshot, after you have reviewed it. |
 | `--ranges-file PATH` | Use a vetted local copy: this script's json, Cloudflare's API JSON, or one CIDR per line. |
 

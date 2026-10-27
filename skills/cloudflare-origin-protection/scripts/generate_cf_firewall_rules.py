@@ -33,11 +33,17 @@ every interface except loopback, so Docker bridges, Kubernetes pods, VPNs and
 private networks lose access to the web ports too. On such hosts pass
 --public-iface with the internet-facing interface(s) (see `ip route show default`).
 
+Fail closed: if Cloudflare's live list cannot be fetched or looks wrong, the
+script prints an error, writes no rules, and exits with status 1, so a scheduled
+refresh keeps the last good rules. Pass --allow-snapshot to fall back to the
+bundled, dated snapshot instead.
+
 Usage:
     python -I generate_cf_firewall_rules.py --format nftables --public-iface eth0 > cf-origin.nft
     python -I generate_cf_firewall_rules.py --format nftables --ports 443 --deny-ports 80
     python -I generate_cf_firewall_rules.py --format nftables --also-allow 10.0.1.0/24
-    python -I generate_cf_firewall_rules.py --format iptables --require-live > cf-origin.sh
+    python -I generate_cf_firewall_rules.py --format iptables --public-iface eth0 > cf-origin.sh
+    python -I generate_cf_firewall_rules.py --format cidr --allow-snapshot
     python -I generate_cf_firewall_rules.py --format aws --ports 443 > cf-sg.json
     python -I generate_cf_firewall_rules.py --format nginx > /etc/nginx/conf.d/cloudflare.conf
     python -I generate_cf_firewall_rules.py --format json > cf-ranges.json
@@ -374,7 +380,16 @@ def emit_iptables(rs):
         "",
         "drop_hooks() {  # drop_hooks <delete commands from old_hooks>",
         "\tprintf '%s\\n' \"$1\" | while read -r rule; do",
-        "\t\tif [ -n \"$rule\" ]; then eval \"$IPT $rule\"; fi",
+        "\t\t[ -n \"$rule\" ] || continue",
+        "\t\t# Rules are split into plain words and never run as shell code. A tagged rule",
+        "\t\t# with any character this script does not write itself is skipped.",
+        "\t\tif [ -n \"$(printf '%s' \"$rule\" | LC_ALL=C tr -d 'A-Za-z0-9_.,:/@! -')\" ]; then",
+        "\t\t\tprintf 'warning: skipping a tagged rule this script did not write: %s\\n' \"$rule\" >&2",
+        "\t\t\tcontinue",
+        "\t\tfi",
+        "\t\tset -f",
+        "\t\t$IPT $rule",
+        "\t\tset +f",
         "\tdone",
         "}",
         "",
@@ -698,8 +713,11 @@ def main():
                          "server listens there)")
     ap.add_argument("--no-v6", action="store_true",
                     help="do not admit Cloudflare over IPv6 (IPv6 web traffic is then dropped)")
-    ap.add_argument("--require-live", action="store_true",
-                    help="fail instead of falling back to the bundled snapshot (use in timers)")
+    ap.add_argument("--allow-snapshot", action="store_true",
+                    help="if Cloudflare's live list cannot be fetched or looks wrong, use the bundled "
+                         "snapshot of %s instead of failing" % SNAPSHOT_DATE)
+    # Failing closed is the default since 2.0.1; --require-live stays accepted for old commands.
+    ap.add_argument("--require-live", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--accept-changes", action="store_true",
                     help="accept a range list that moved far from the bundled snapshot")
     ap.add_argument("--ranges-file", metavar="PATH",
@@ -712,6 +730,8 @@ def main():
         ap.error("--ports must name at least one port")
     if set(args.ports) & set(args.deny_ports):
         ap.error("a port cannot be in both --ports and --deny-ports")
+    if args.require_live and args.allow_snapshot:
+        ap.error("--require-live and --allow-snapshot contradict each other")
 
     try:
         if args.ranges_file:
@@ -722,12 +742,16 @@ def main():
         if not args.accept_changes:
             check_changes(v4, v6)
     except Exception as exc:  # noqa: BLE001
-        if args.require_live or args.ranges_file:
-            sys.stderr.write("[error] no usable Cloudflare ranges: %s\n" % printable(exc, 1000))
+        reason = printable(exc, 1000)
+        if args.ranges_file or not args.allow_snapshot:
+            sys.stderr.write("[error] no usable Cloudflare ranges: %s\n" % reason)
+            if not args.ranges_file:
+                sys.stderr.write("[error] no rules were written. Fix the cause, or pass --allow-snapshot to "
+                                 "use the bundled snapshot of %s instead.\n" % SNAPSHOT_DATE)
             return 1
-        sys.stderr.write("[warn] could not use live ranges (%s); using the bundled snapshot of %s. Verify "
-                         "it against https://www.cloudflare.com/ips/ before relying on it.\n"
-                         % (printable(exc, 1000), SNAPSHOT_DATE))
+        sys.stderr.write("[warn] could not use live ranges (%s); --allow-snapshot given, so using the bundled "
+                         "snapshot of %s. Verify it against https://www.cloudflare.com/ips/ before relying on "
+                         "it.\n" % (reason, SNAPSHOT_DATE))
         v4, v6 = snapshot()
         source, etag = "BUNDLED SNAPSHOT of %s (live ranges unavailable)" % SNAPSHOT_DATE, None
 

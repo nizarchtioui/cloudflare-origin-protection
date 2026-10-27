@@ -16,8 +16,9 @@ The sources of truth for Cloudflare's ranges are
 `https://api.cloudflare.com/client/v4/ips` (JSON with an etag), and
 `https://www.cloudflare.com/ips-v4/` and `/ips-v6/`. The www lists answer
 HTTP 403 to default script user agents; `scripts/generate_cf_firewall_rules.py`
-handles both sources, validates every entry, and falls back to a dated
-snapshot only when allowed.
+handles both sources and validates every entry. If neither source gives a
+usable list, it exits with an error and writes no rules, unless you pass
+`--allow-snapshot` to use its bundled, dated list.
 
 ---
 
@@ -190,15 +191,16 @@ WantedBy=sysinit.target
 ```sh
 #!/bin/sh
 # /usr/local/sbin/cf-origin-refresh: regenerate; keep the last good table on any failure
+# (a failed or suspicious fetch exits 1 and writes nothing, so set -e stops here)
 set -eu
 dir=/etc/cf-origin
 python3 -I /usr/local/lib/cf-origin/generate_cf_firewall_rules.py --format nftables \
-    --public-iface eth0 --ports 443 --deny-ports 80 --require-live > "$dir/cf-origin.nft.new"
+    --public-iface eth0 --ports 443 --deny-ports 80 > "$dir/cf-origin.nft.new"
 nft -c -f "$dir/cf-origin.nft.new"
 mv "$dir/cf-origin.nft.new" "$dir/cf-origin.nft"
 nft -f "$dir/cf-origin.nft"
 # Optional: keep nginx's real-IP list in step
-# python3 -I /usr/local/lib/cf-origin/generate_cf_firewall_rules.py --format nginx --require-live \
+# python3 -I /usr/local/lib/cf-origin/generate_cf_firewall_rules.py --format nginx \
 #     > /etc/nginx/conf.d/cloudflare.conf.new && mv /etc/nginx/conf.d/cloudflare.conf.new \
 #     /etc/nginx/conf.d/cloudflare.conf && nginx -t && systemctl reload nginx
 ```

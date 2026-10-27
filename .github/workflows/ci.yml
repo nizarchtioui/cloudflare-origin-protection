@@ -37,7 +37,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y nftables shellcheck
 
       - name: Prepare a ranges file (live, or the bundled snapshot if Cloudflare is unreachable)
-        run: python3 -I "$GEN" --format json > ranges.json
+        run: python3 -I "$GEN" --format json --allow-snapshot > ranges.json
 
       - name: nftables syntax check, every variant
         run: |
@@ -92,3 +92,21 @@ jobs:
           check 4 1
           sudo sh cf-origin.sh remove
           check 0 0
+
+      - name: iptables script never runs text from a planted rule
+        run: |
+          set -eu
+          planted='cf-origin-lockdown $(touch /tmp/pwned)'
+          sudo iptables -w -t mangle -A PREROUTING -m comment --comment "$planted" -j RETURN
+          echo "planted rule, as iptables prints it:"
+          sudo iptables -w -t mangle -S PREROUTING | grep cf-origin-lockdown
+          sudo sh cf-origin.sh 2> apply.err
+          sudo sh cf-origin.sh remove 2> remove.err
+          cat apply.err remove.err
+          test ! -e /tmp/pwned
+          grep -q 'skipping a tagged rule this script did not write' apply.err
+          grep -q 'skipping a tagged rule this script did not write' remove.err
+          # The planted rule is left alone, and everything the script added is gone.
+          sudo iptables -w -t mangle -C PREROUTING -m comment --comment "$planted" -j RETURN
+          test "$(sudo iptables -w -t mangle -S | grep -c -- '-N CF_ORIGIN_' || true)" -eq 0
+          sudo iptables -w -t mangle -D PREROUTING -m comment --comment "$planted" -j RETURN

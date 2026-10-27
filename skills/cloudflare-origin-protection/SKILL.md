@@ -136,10 +136,12 @@ Follow `references/verification.md`:
 6. **The origin may be a hostname, not an IP.** PaaS default domains, load
    balancer DNS names and bucket endpoints are public routes around the edge.
    Restrict them at the platform (`references/platforms.md`).
-7. **The ranges change.** Refresh on a schedule with `--require-live`; the
-   nftables output swaps atomically. `www.cloudflare.com` rejects scripts
-   with default user agents (HTTP 403), so the generator uses the API and sends
-   its own user agent.
+7. **The ranges change.** Refresh on a schedule. A failed or suspicious fetch
+   exits with an error and writes no rules, so the last good rules stay in
+   place; `--allow-snapshot` opts into the bundled, dated list instead. The
+   nftables output swaps atomically. `www.cloudflare.com` rejects scripts with
+   default user agents (HTTP 403), so the generator uses the API and sends its
+   own user agent.
 
 ## Scripts
 

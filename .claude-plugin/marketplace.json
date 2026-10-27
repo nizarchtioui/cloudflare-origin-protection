@@ -9,7 +9,7 @@
       "name": "cloudflare-origin-protection",
       "source": "./",
       "description": "Find, close and prove closed every path to your origin server that skips Cloudflare.",
-      "version": "2.0.0"
+      "version": "2.0.1"
     }
   ]
 }

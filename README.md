@@ -18,6 +18,17 @@ An Agent Skill for Claude, plus two zero-dependency tools, that find, close and
 
 ---
 
+## Project status
+
+> **New.** First released on 2026-10-27; the current version is v2.0.1. It has
+> automated tests and CI, but **no independent security review yet**.
+>
+> - Read the generated rules before applying them.
+> - Try them on a non-production host first.
+> - Report problems as described in [SECURITY.md](SECURITY.md).
+>
+> Reviews are very welcome.
+
 ## The problem in 30 seconds
 
 Cloudflare protects the traffic that passes through Cloudflare. If your origin
@@ -81,11 +92,15 @@ login page served directly.
 
 ## Quick start
 
+Every command below is pinned to the **v2.0.1** release. You get exactly the
+tested code even if `main` moves on, and the release page lists SHA-256
+checksums of the scripts.
+
 **1. Audit (two minutes).** Run it from your laptop or any network outside
 Cloudflare, never on the origin itself.
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/nizarchtioui/cloudflare-origin-protection/main/skills/cloudflare-origin-protection/scripts/check_origin_lockdown.py
+curl -fsSLO https://raw.githubusercontent.com/nizarchtioui/cloudflare-origin-protection/v2.0.1/skills/cloudflare-origin-protection/scripts/check_origin_lockdown.py
 python3 -I check_origin_lockdown.py --host example.com --ip <origin IPv4> --ip <origin IPv6>
 ```
 
@@ -93,7 +108,7 @@ python3 -I check_origin_lockdown.py --host example.com --ip <origin IPv4> --ip <
 internet-facing interface:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/nizarchtioui/cloudflare-origin-protection/main/skills/cloudflare-origin-protection/scripts/generate_cf_firewall_rules.py
+curl -fsSLO https://raw.githubusercontent.com/nizarchtioui/cloudflare-origin-protection/v2.0.1/skills/cloudflare-origin-protection/scripts/generate_cf_firewall_rules.py
 ip route show default                       # shows the public interface, e.g. "dev eth0"
 python3 -I generate_cf_firewall_rules.py --format nftables --public-iface eth0 --ports 443 --deny-ports 80 > cf-origin.nft
 sudo nft -c -f cf-origin.nft && sudo nft -f cf-origin.nft
@@ -108,18 +123,19 @@ CI or a monitor; the exit codes are made for that.
 
 ## Install the skill
 
-**Claude Code, as a plugin.** Pick a scope when prompted. Update later with
-`claude plugin update cloudflare-origin-protection@origin-protection`.
+**Claude Code, as a plugin.** Pick a scope when prompted. The `#v2.0.1` pins
+the plugin to this release. To move to a later one, add the marketplace again
+with that release's tag.
 
 ```text
-/plugin marketplace add nizarchtioui/cloudflare-origin-protection
+/plugin marketplace add nizarchtioui/cloudflare-origin-protection#v2.0.1
 /plugin install cloudflare-origin-protection@origin-protection
 ```
 
 **Claude Code, as a personal skill:**
 
 ```bash
-git clone https://github.com/nizarchtioui/cloudflare-origin-protection
+git clone --branch v2.0.1 --depth 1 https://github.com/nizarchtioui/cloudflare-origin-protection
 cp -r cloudflare-origin-protection/skills/cloudflare-origin-protection ~/.claude/skills/
 ```
 
@@ -129,9 +145,10 @@ appears twice.
 **Claude apps (claude.ai, desktop):**
 
 1. Turn on **Code execution and file creation**. The skill's tools need it.
-2. Download `cloudflare-origin-protection.zip` from the
-   [latest release](https://github.com/nizarchtioui/cloudflare-origin-protection/releases/latest).
-   The zip contains the skill folder; upload it as is, without unzipping.
+2. Download
+   [`cloudflare-origin-protection.zip`](https://github.com/nizarchtioui/cloudflare-origin-protection/releases/download/v2.0.1/cloudflare-origin-protection.zip)
+   from the v2.0.1 release. The zip contains the skill folder; upload it as is,
+   without unzipping.
 3. Upload it as a custom skill
    ([how](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills)),
    then turn it on.
@@ -218,12 +235,15 @@ Exit code 2 means a usage or internal error.
 | `--also-allow` | Extra trusted sources: a load balancer, health checks, a VPC range. |
 | `--no-udp-drop` | Keep UDP open on the web ports (for a VPN on UDP 443). |
 | `--no-v6` | Do not admit Cloudflare over IPv6. |
-| `--require-live` | Fail instead of using the bundled snapshot. Use it in timers. |
+| `--allow-snapshot` | If the live list can't be fetched or looks wrong, use the bundled, dated list instead of failing. Off by default. |
 | `--ranges-file` | Use a vetted local copy of the ranges. |
 | `--accept-changes` | Accept a range list that changed a lot, after review. |
 
 **Safety:**
 
+- **It fails closed.** If the live list can't be fetched or looks suspicious,
+  it prints an error, writes no rules and exits with status 1. A scheduled
+  refresh then keeps your last good rules.
 - It refuses non-CIDRs, private or over-broad ranges, lists missing an IP
   family, and suspicious changes (more than half the known ranges gone, or more
   than double the address space).
@@ -232,10 +252,15 @@ Exit code 2 means a usage or internal error.
   scripts.
 - The nftables output reloads atomically. The iptables and Windows outputs
   build the new rules before removing the old ones.
+- The iptables script never runs rule text as shell code. Any rule bearing
+  its tag that it didn't write itself is skipped with a warning.
 
 </details>
 
-## Built to be trusted
+## Design safeguards
+
+These are design choices, not an outside audit. See
+[Project status](#project-status) above.
 
 - **Zero dependencies.** Single-file Python 3.6+ scripts, made to run with
   `python3 -I` on old servers.

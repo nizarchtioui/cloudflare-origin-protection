@@ -1,5 +1,41 @@
 # Changelog
 
+## 2.0.1 (2026-10-27)
+
+Safety fixes before anyone relies on 2.0.0. Upgrade if you use the generator in
+a scheduled refresh or use its iptables output.
+
+### Changed
+
+- **A failed range fetch now fails closed.** If Cloudflare's live list can't
+  be fetched or looks suspicious, the generator prints an error, writes no
+  rules and exits with status 1. A scheduled refresh therefore keeps the last
+  good rules. Falling back to the bundled list is now opt-in with
+  `--allow-snapshot`. `--require-live` is still accepted but no longer needed.
+- **Install commands are pinned to this release.** That covers the raw
+  script links, the plugin marketplace (`#v2.0.1`), `git clone --branch
+  v2.0.1`, and the release zip link. The release lists SHA-256 checksums.
+
+### Fixed
+
+- **No more `eval` in the generated iptables script.**
+  - Before: it read its tagged rules back with `iptables -S` and ran them
+    through `eval`, so a tagged rule with a crafted comment could have run
+    commands as root.
+  - Now: rules are split into plain words, and any tagged rule containing
+    characters the script doesn't write itself is skipped with a warning.
+  - CI plants such a rule and checks that nothing runs and that the rule is
+    left alone.
+
+### Docs
+
+- **README:**
+  - A project-status note: new, no independent security review yet, try the
+    rules on a non-production host first.
+  - "Design safeguards" replaces "Built to be trusted".
+- **SECURITY.md:** the same status note, and a supported-versions table that
+  asks 2.0.0 users to upgrade.
+
 ## 2.0.0 (2026-10-26)
 
 A ground-up hardening release. Upgrade from 1.x: its checker can report

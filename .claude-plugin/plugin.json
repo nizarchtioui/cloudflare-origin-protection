@@ -1,6 +1,6 @@
 {
   "name": "cloudflare-origin-protection",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Find, close and prove closed every path to your origin server that skips Cloudflare: self-audit, validated firewall rules and step-by-step hardening playbooks.",
   "author": {
     "name": "Nizar Chtioui"

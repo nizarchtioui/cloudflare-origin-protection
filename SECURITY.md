@@ -19,8 +19,15 @@ in the release notes unless you prefer otherwise.
 
 | Version | Supported |
 |---|---|
-| 2.x | Yes |
+| 2.0.1 and later | Yes |
+| 2.0.0 | Upgrade. When a fetch fails, its generator falls back to the bundled range list with only a warning and exits 0. Its iptables script runs rule text through `eval`. |
 | 1.x | No: upgrade, because 1.x gives false "locked down" results |
+
+## Project status
+
+This project is new. It was first released on 2026-10-27 and has not had an
+independent security review. Reviews of the scripts and of the generated rules
+are very welcome; report findings privately as described above.
 
 ## Responsible use
 

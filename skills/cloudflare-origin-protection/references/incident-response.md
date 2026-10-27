@@ -63,8 +63,8 @@ webhook or URL fetcher, or an IP committed to a public repository.
   IPv6.
 - The `--also-allow` test shows origin auth refusing (`verification.md` §2).
 - Leave monitoring in place: drop counters, a non-Cloudflare access log,
-  `CF-Worker` values that are not your zone, and the scheduled range refresh
-  with `--require-live`.
+  `CF-Worker` values that are not your zone, and the scheduled range refresh.
+  The refresh fails closed: a bad fetch keeps the last good rules.
 
 ## Afterwards
 
