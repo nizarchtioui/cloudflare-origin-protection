@@ -78,6 +78,12 @@ SNAPSHOT_V6 = [
 # A poisoned or garbled list must never widen the allowlist: refuse anything
 # broader than these prefixes, and anything that is not a public CIDR.
 MIN_PREFIX = {4: 8, 6: 16}
+# --also-allow may go broader than MIN_PREFIX only inside private or link-local
+# space (e.g. fc00::/7). Listed explicitly: ipaddress's is_private differs across
+# Python versions, and some versions count 0.0.0.0/0 as private.
+PRIVATE_SPACE = [ipaddress.ip_network(n) for n in (
+    "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "100.64.0.0/10", "169.254.0.0/16",
+    "fc00::/7", "fe80::/10")]
 MAX_RANGES = 200
 MAX_PORTS = 15  # iptables multiport limit
 ADMIN_PORTS = {22: "SSH", 3389: "RDP", 5985: "WinRM", 5986: "WinRM"}
@@ -393,7 +399,8 @@ def emit_iptables(rs):
         "remove() {  # remove <iptables|ip6tables>",
         "\tIPT=\"$1 -w -t mangle\"",
         "\tdrop_hooks \"$(old_hooks)\"",
-        "\tdrop_chains $(old_chains)",
+        "\tchains=$(old_chains)",
+        "\tdrop_chains $chains",
         "}",
         "",
         "case \"${1:-apply}\" in",
@@ -649,7 +656,9 @@ def parse_extra(value):
         net = ipaddress.ip_network(value.strip(), strict=False)
     except ValueError:
         raise argparse.ArgumentTypeError("not a CIDR or IP: %r" % value)
-    if net.prefixlen < MIN_PREFIX[net.version] and not net.is_private:
+    inside_private = any(net.version == p.version and net.network_address in p and net.broadcast_address in p
+                         for p in PRIVATE_SPACE)
+    if net.prefixlen < MIN_PREFIX[net.version] and not inside_private:
         raise argparse.ArgumentTypeError("refusing a public range as broad as %s" % net)
     return net
 
