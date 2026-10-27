@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- **CI also tests the iptables-legacy backend.** The generated iptables script
+  is applied, refreshed and removed on both the `nf_tables` and `legacy`
+  backends, including the planted-rule test.
+- **Updated link.** Cloudflare renamed Aegis to Dedicated CDN Egress IPs, so
+  `docs/why-now.md` now links to the new page.
+
 ## 2.0.1 (2026-10-27)
 
 Safety fixes before anyone relies on 2.0.0. Upgrade if you use the generator in

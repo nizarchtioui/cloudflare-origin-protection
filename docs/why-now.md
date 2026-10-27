@@ -118,7 +118,7 @@ flowchart LR
 - Cloudflare: [Tunnel DNS records](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/routing-to-tunnel/dns/)
 - Cloudflare: [HTTP/3](https://developers.cloudflare.com/speed/optimization/protocol/http3/)
 - Cloudflare: [Request Header Transform Rules](https://developers.cloudflare.com/rules/transform/request-header-modification/)
-- Cloudflare: [Dedicated CDN Egress IPs](https://developers.cloudflare.com/aegis/)
+- Cloudflare: [Dedicated CDN Egress IPs](https://developers.cloudflare.com/smart-shield/configuration/dedicated-egress-ips/)
 - Cloudflare: [IP ranges](https://www.cloudflare.com/ips/)
 - Docker: [Packet filtering and firewalls](https://docs.docker.com/engine/network/packet-filtering-firewalls/)
 - Caddy: [Global options (`servers`, `protocols`)](https://caddyserver.com/docs/caddyfile/options)

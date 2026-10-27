@@ -69,13 +69,31 @@ jobs:
           EOF
 
   firewall:
-    name: Load the generated rules on Linux
+    name: Load the generated rules on Linux (iptables ${{ matrix.iptables }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        iptables: [nf_tables, legacy]
     steps:
       - uses: actions/checkout@v5
 
       - name: Install nftables and ShellCheck
         run: sudo apt-get update && sudo apt-get install -y nftables shellcheck
+
+      - name: Select the iptables backend
+        env:
+          BACKEND: ${{ matrix.iptables }}
+        run: |
+          set -eu
+          if [ "$BACKEND" = legacy ]; then
+            sudo update-alternatives --set iptables /usr/sbin/iptables-legacy
+            sudo update-alternatives --set ip6tables /usr/sbin/ip6tables-legacy
+          fi
+          for ipt in iptables ip6tables; do
+            sudo "$ipt" -V
+            sudo "$ipt" -V | grep -q "($BACKEND)"
+          done
 
       - name: Prepare a ranges file (live, or the bundled snapshot if Cloudflare is unreachable)
         run: python3 -I "$GEN" --format json --allow-snapshot > ranges.json
