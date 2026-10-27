@@ -1,0 +1,15 @@
+{
+  "name": "origin-protection",
+  "description": "Origin-protection skills by Nizar Chtioui: keep attackers from going around Cloudflare.",
+  "owner": {
+    "name": "Nizar Chtioui"
+  },
+  "plugins": [
+    {
+      "name": "cloudflare-origin-protection",
+      "source": "./",
+      "description": "Find, close and prove closed every path to your origin server that skips Cloudflare.",
+      "version": "2.0.0"
+    }
+  ]
+}

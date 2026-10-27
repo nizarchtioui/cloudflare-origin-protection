@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+dist/
+*.skill
+*.zip
+.DS_Store
+Thumbs.db

@@ -1,0 +1,12 @@
+{
+  "name": "cloudflare-origin-protection",
+  "version": "2.0.0",
+  "description": "Find, close and prove closed every path to your origin server that skips Cloudflare: self-audit, validated firewall rules and step-by-step hardening playbooks.",
+  "author": {
+    "name": "Nizar Chtioui"
+  },
+  "homepage": "https://github.com/nizarchtioui/cloudflare-origin-protection",
+  "repository": "https://github.com/nizarchtioui/cloudflare-origin-protection",
+  "license": "MIT",
+  "keywords": ["cloudflare", "security", "origin-server", "firewall", "ddos", "waf", "mtls", "nftables"]
+}

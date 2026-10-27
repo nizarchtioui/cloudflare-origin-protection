@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GEN: skills/cloudflare-origin-protection/scripts/generate_cf_firewall_rules.py
+
+jobs:
+  tests:
+    name: Tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit and integration tests (TLS tests use openssl)
+        run: python -m unittest discover -s tests -v
+
+  firewall:
+    name: Load the generated rules on Linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install nftables and ShellCheck
+        run: sudo apt-get update && sudo apt-get install -y nftables shellcheck
+
+      - name: Prepare a ranges file (live, or the bundled snapshot if Cloudflare is unreachable)
+        run: python3 -I "$GEN" --format json > ranges.json
+
+      - name: nftables syntax check, every variant
+        run: |
+          set -eu
+          IFACE=$(ip route show default | awk '{print $5; exit}')
+          for args in "" "--public-iface $IFACE" "--ports 443 --deny-ports 80" "--no-v6" \
+                      "--no-udp-drop --also-allow 10.0.0.0/8 --also-allow fc00::/7"; do
+            echo "== variant: ${args:-default}"
+            python3 -I "$GEN" --format nftables --ranges-file ranges.json $args > variant.nft
+            sudo nft -c -f variant.nft
+          done
+
+      - name: nftables apply, re-apply and remove
+        run: |
+          set -eu
+          IFACE=$(ip route show default | awk '{print $5; exit}')
+          python3 -I "$GEN" --format nftables --public-iface "$IFACE" --ports 443 --deny-ports 80 \
+            --ranges-file ranges.json > cf-origin.nft
+          sudo nft -f cf-origin.nft
+          sudo nft list table inet cf_origin
+          sudo nft -f cf-origin.nft
+          test "$(sudo nft list tables | grep -c 'inet cf_origin')" -eq 1
+          sudo nft delete table inet cf_origin
+          if sudo nft list tables | grep -q cf_origin; then echo "table still present"; exit 1; fi
+
+      - name: iptables script lint
+        run: |
+          set -eu
+          python3 -I "$GEN" --format iptables --public-iface eth0 --ports 443 --deny-ports 80 \
+            --ranges-file ranges.json > cf-origin.sh
+          sh -n cf-origin.sh
+          shellcheck -s sh -S warning cf-origin.sh
+
+      - name: iptables apply, refresh and remove (IPv4 and IPv6)
+        run: |
+          set -eu
+          IFACE=$(ip route show default | awk '{print $5; exit}')
+          python3 -I "$GEN" --format iptables --public-iface "$IFACE" --ports 443 --deny-ports 80 \
+            --ranges-file ranges.json > cf-origin.sh
+          check() {
+            for ipt in iptables ip6tables; do
+              hooks=$(sudo "$ipt" -w -t mangle -S PREROUTING | grep -c cf-origin-lockdown || true)
+              chains=$(sudo "$ipt" -w -t mangle -S | grep -c -- '-N CF_ORIGIN_' || true)
+              echo "$ipt: hooks=$hooks chains=$chains"
+              test "$hooks" -eq "$1"
+              test "$chains" -eq "$2"
+            done
+          }
+          sudo sh cf-origin.sh
+          check 4 1
+          sudo sh cf-origin.sh          # refresh: new chain in, old chain out
+          check 4 1
+          sudo sh cf-origin.sh remove
+          check 0 0
